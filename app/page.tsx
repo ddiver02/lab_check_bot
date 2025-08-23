@@ -22,10 +22,21 @@ export default function Home() {
     loadMessages();
   }, []);
 
+console.log("SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
+console.log("SUPABASE_KEY", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.slice(0,10) + "...");
+
+
   async function handleSubmit() {
     if (!text) return;
     const supabase = getSupabase();
-    await supabase.from("messages").insert({ content: text });
+    const { error } = await supabase.from("messages").insert({ content: text });
+  
+    if (error) {
+      console.error("❌ Insert error:", error.message);
+      alert("메시지 저장 실패: " + error.message);
+      return;
+    }
+  
     setText("");
     loadMessages();
   }
@@ -44,9 +55,16 @@ export default function Home() {
           placeholder="텍스트를 입력하세요"
           className="flex-1 rounded-lg border p-3 outline-none"
         />
-        <button onClick={handleSubmit} className="rounded-lg border px-4 py-2">
-          저장
+        <button
+          onClick={(e) => {
+          e.preventDefault();   // ← 리로드 방지
+          handleSubmit();
+                }}
+            className="rounded-lg border px-4 py-2"
+            >
+            저장
         </button>
+
       </div>
 
       <div className="space-y-2">
