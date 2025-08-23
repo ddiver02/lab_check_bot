@@ -1,19 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabase } from "@/lib/supabaseClient";
 
-type Message = {
-  id: number;
-  content: string;
-  created_at: string; // ISO 문자열
-};
+type Message = { id: number; content: string; created_at: string };
 
 export default function Home() {
   const [text, setText] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
 
-  // 최근 메시지 불러오기
   async function loadMessages() {
+    const supabase = getSupabase();
     const { data } = await supabase
       .from("messages")
       .select("*")
@@ -22,14 +18,13 @@ export default function Home() {
     if (data) setMessages(data);
   }
 
-  // 첫 로드 시 실행
   useEffect(() => {
     loadMessages();
   }, []);
 
-  // 메시지 저장
   async function handleSubmit() {
     if (!text) return;
+    const supabase = getSupabase();
     await supabase.from("messages").insert({ content: text });
     setText("");
     loadMessages();
@@ -49,10 +44,7 @@ export default function Home() {
           placeholder="텍스트를 입력하세요"
           className="flex-1 rounded-lg border p-3 outline-none"
         />
-        <button
-          onClick={handleSubmit}
-          className="rounded-lg border px-4 py-2"
-        >
+        <button onClick={handleSubmit} className="rounded-lg border px-4 py-2">
           저장
         </button>
       </div>
