@@ -2,9 +2,15 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
+type Message = {
+  id: number;
+  content: string;
+  created_at: string; // ISO 문자열
+};
+
 export default function Home() {
   const [text, setText] = useState("");
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   // 최근 메시지 불러오기
   async function loadMessages() {
