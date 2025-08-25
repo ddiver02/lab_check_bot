@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.17.0",
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.56.0",
     "genkit": "^1.17.0",
     "next": "15.5.0",

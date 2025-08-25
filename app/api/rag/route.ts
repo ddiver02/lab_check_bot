@@ -1,8 +1,8 @@
-export const runtime = "nodejs";
+// app/api/rag/route.ts
 import { NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin"; // ← 이 임포트가 있어야 함
-
-
+import crypto from "crypto";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 type RagRequest = { query: string };
 type MinimalQuote = { quote: string; author: string; source: string };
@@ -13,8 +13,19 @@ function isRagRequest(v: unknown): v is RagRequest {
   return typeof r.query === "string" && r.query.trim().length > 0;
 }
 
+function hashQuery(query: string) {
+  return crypto.createHash("sha256").update(query).digest("hex");
+}
+
+// 캐시 만료 기준 (예: 7일) {💥외워!}
+const CACHE_TTL_DAYS = 7;
+
+// 벡터 매칭 임계값 / 개수 (필요시 조정) {💥외워!}
+const VECTOR_THRESHOLD = 0.78;
+const VECTOR_TOP_K = 1;
+
 export async function POST(req: Request) {
-  // 1) 입력 검증
+  // 0) 입력 파싱 & 검증
   let bodyUnknown: unknown;
   try {
     bodyUnknown = await req.json();
@@ -27,18 +38,89 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-  const query = bodyUnknown.query;
-  // 🔸🔸🔸 바로 “여기”에 Supabase insert 넣기 🔸🔸🔸
-  try {
-    const admin = getSupabaseAdmin(); // ← 호출 시점에 생성 (지연 생성)
-    await admin.from("messages").insert({ content: query });
-  } catch (e) {
-    console.error("Supabase insert error:", e);
-    // 저장 실패는 서비스 중단 사유가 아니므로 계속 진행
-  }
-  // 🔸🔸🔸 여기까지 🔸🔸🔸
+  const query = bodyUnknown.query.trim();
 
-  // 2) 환경변수 확인
+  const admin = getSupabaseAdmin();
+
+  // 1) 캐시 조회 (정확 동일 질의 해시) {💥외워!}
+  const queryHash = hashQuery(query);
+  try {
+    const { data: cached, error: cacheError } = await admin
+      .from("quote_cache")
+      .select("quote, author, source, created_at")
+      .eq("query_hash", queryHash)
+      .maybeSingle();
+
+    if (!cacheError && cached) {
+      const createdAt = new Date(cached.created_at);
+      const ageDays = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+      if (ageDays < CACHE_TTL_DAYS) {
+        return NextResponse.json(
+          { quote: cached.quote, author: cached.author, source: cached.source },
+          { status: 200 }
+        );
+      }
+      // 만료 시 계속 진행
+    }
+  } catch {
+    // 캐시 조회 실패시에도 계속 진행
+  }
+
+  // 2) 쿼리 로그 (best-effort)
+  try {
+    await admin.from("messages").insert({ content: query });
+  } catch {
+    /* ignore */
+  }
+
+  // 3) 벡터 유사도 검색 (pgvector RPC) — text-embedding-004 → 768차원 {💥외워!}
+  try {
+    const apiKey = process.env.GOOGLE_API_KEY;
+    if (!apiKey) {
+      // 임베딩 키 없으면 바로 Genkit 폴백
+      throw new Error("Missing GOOGLE_API_KEY");
+    }
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const embedder = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    const emb = await embedder.embedContent(query);
+    const queryVec = emb.embedding.values;
+
+    const { data: matches, error: matchErr } = await admin.rpc("match_quotes", {
+      query_embedding: queryVec,
+      match_threshold: VECTOR_THRESHOLD,
+      match_count: VECTOR_TOP_K,
+    });
+
+    if (!matchErr && Array.isArray(matches) && matches.length > 0) {
+      const top = matches[0]; // { quote, author, source, similarity, ... }
+      const minimal: MinimalQuote = {
+        quote: top.quote,
+        author: top.author,
+        source: top.source,
+      };
+
+      // 벡터 결과도 캐시에 저장(다음 동일질의 가속)
+      try {
+        await admin.from("quote_cache").upsert({
+          query_hash: queryHash,
+          query_text: query,
+          quote: minimal.quote,
+          author: minimal.author,
+          source: minimal.source,
+          created_at: new Date().toISOString(),
+        });
+      } catch {
+        /* ignore */
+      }
+
+      return NextResponse.json(minimal, { status: 200 });
+    }
+    // 매치 실패 → Genkit 폴백
+  } catch {
+    // 임베딩/매치 실패시 Genkit 폴백으로 진행
+  }
+
+  // 4) 폴백: Genkit(Cloud Run) 호출
   const base = process.env.GENKIT_API_URL;
   if (!base) {
     return NextResponse.json(
@@ -46,13 +128,10 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-
-  // 3) Genkit 커스텀 라우트 호출 (POST <RUN_URL>/api/quote)
   const upstream = await fetch(`${base.replace(/\/+$/, "")}/api/quote`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ input: query }),
-    // 중요: 서버 간 호출이라 캐시 비활성화가 안전 {💥외워!}
     cache: "no-store",
   });
 
@@ -64,15 +143,27 @@ export async function POST(req: Request) {
     );
   }
 
-  // 4) ▶ 최소 필드만 추출해서 반환 ◀
-  const payload = (await upstream.json());
+  const payload = await upstream.json();
   const q = payload?.quote;
-
   const minimal: MinimalQuote = {
     quote: typeof q?.quote === "string" ? q.quote : "결과 문구 없음",
     author: typeof q?.author === "string" ? q.author : "알 수 없음",
     source: typeof q?.source === "string" ? q.source : "알 수 없음",
   };
+
+  // 5) 캐시 갱신 (upsert)
+  try {
+    await admin.from("quote_cache").upsert({
+      query_hash: queryHash,
+      query_text: query,
+      quote: minimal.quote,
+      author: minimal.author,
+      source: minimal.source,
+      created_at: new Date().toISOString(),
+    });
+  } catch {
+    /* ignore */
+  }
 
   return NextResponse.json(minimal, { status: 200 });
 }
