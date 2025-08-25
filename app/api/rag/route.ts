@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 type RagRequest = { query: string };
+type MinimalQuote = { quote: string; author: string; source: string };
 
 function isRagRequest(v: unknown): v is RagRequest {
   if (typeof v !== "object" || v === null) return false;
@@ -33,12 +34,13 @@ export async function POST(req: Request) {
     );
   }
 
-  // 3) Genkit(Cloud Run) 커스텀 라우트 호출: POST <RUN_URL>/api/quote
-  //    우리 서버(index.ts)에 만든 express 라우트가 `input: string` 을 받음
+  // 3) Genkit 커스텀 라우트 호출 (POST <RUN_URL>/api/quote)
   const upstream = await fetch(`${base.replace(/\/+$/, "")}/api/quote`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ input: query }),
+    // 중요: 서버 간 호출이라 캐시 비활성화가 안전 {💥외워!}
+    cache: "no-store",
   });
 
   if (!upstream.ok) {
@@ -49,9 +51,17 @@ export async function POST(req: Request) {
     );
   }
 
-  // 4) 성공 응답 그대로 전달
-  const data = await upstream.json();
-  return NextResponse.json(data, { status: 200 });
+  // 4) ▶ 최소 필드만 추출해서 반환 ◀
+  const payload = (await upstream.json());
+  const q = payload?.quote;
+
+  const minimal: MinimalQuote = {
+    quote: typeof q?.quote === "string" ? q.quote : "결과 문구 없음",
+    author: typeof q?.author === "string" ? q.author : "알 수 없음",
+    source: typeof q?.source === "string" ? q.source : "알 수 없음",
+  };
+
+  return NextResponse.json(minimal, { status: 200 });
 }
 
 export async function GET() {
