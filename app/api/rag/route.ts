@@ -1,5 +1,7 @@
+export const runtime = "nodejs";
 import { NextResponse } from "next/server";
-import supabaseAdmin from "@/lib/supabaseAdmin";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin"; // ← 이 임포트가 있어야 함
+
 
 
 type RagRequest = { query: string };
@@ -26,13 +28,16 @@ export async function POST(req: Request) {
     );
   }
   const query = bodyUnknown.query;
-  const { error } = await supabaseAdmin
-    .from("messages")
-    .insert({ content: query });
-
-  if (error) {
-    console.error("❌ Supabase insert error:", error.message);
+  // 🔸🔸🔸 바로 “여기”에 Supabase insert 넣기 🔸🔸🔸
+  try {
+    const admin = getSupabaseAdmin(); // ← 호출 시점에 생성 (지연 생성)
+    await admin.from("messages").insert({ content: query });
+  } catch (e) {
+    console.error("Supabase insert error:", e);
+    // 저장 실패는 서비스 중단 사유가 아니므로 계속 진행
   }
+  // 🔸🔸🔸 여기까지 🔸🔸🔸
+
   // 2) 환경변수 확인
   const base = process.env.GENKIT_API_URL;
   if (!base) {
