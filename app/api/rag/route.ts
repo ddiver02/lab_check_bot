@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import supabaseAdmin from "@/lib/supabaseAdmin";
+
 
 type RagRequest = { query: string };
 type MinimalQuote = { quote: string; author: string; source: string };
@@ -24,7 +26,13 @@ export async function POST(req: Request) {
     );
   }
   const query = bodyUnknown.query;
+  const { error } = await supabaseAdmin
+    .from("messages")
+    .insert({ content: query });
 
+  if (error) {
+    console.error("❌ Supabase insert error:", error.message);
+  }
   // 2) 환경변수 확인
   const base = process.env.GENKIT_API_URL;
   if (!base) {
