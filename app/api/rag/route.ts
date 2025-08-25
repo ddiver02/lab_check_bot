@@ -1,8 +1,14 @@
+export const runtime = "nodejs";                 // {💥외워!} Edge 아님
+export const preferredRegion = ["icn1","hnd1"];  // 서울/도쿄 우선
+
 // app/api/rag/route.ts
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+
+
+
 
 type RagRequest = { query: string };
 type MinimalQuote = { quote: string; author: string; source: string };
