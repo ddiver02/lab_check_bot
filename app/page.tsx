@@ -70,10 +70,10 @@ export default function Home() {
   return (
     <section className="space-y-8 max-w-3xl mx-auto px-4">
       {/* 헤드라인 */}
-      <div className="rounded-2xl bg-gradient-to-r from-gray-200 to-gray-300 p-10 text-center">
-        <h1 className="text-3xl font-bold">테스형에게 물어봐</h1>
+      <div className="rounded-2xl bg-white p-10 text-center shadow-sm">
+        <h1 className="text-3xl font-bold">한 문장을 선물드려요.</h1>
         <p className="mt-2 text-sm text-gray-700">
-          한 줄로 마음을 적으면, 어울리는 문장을 찾아드려요.
+          ‘책 속에서 오늘의 대답을 찾는다’는 철학으로, <br></br>감정에 맞는 한 구절을 제안하는 인용구 추천 서비스입니다.
         </p>
       </div>
 
@@ -97,8 +97,13 @@ export default function Home() {
           ))}
         </div>
         <span className="text-xs text-gray-500">
-          모드: <b>{MODE_LABELS[mode]}</b>
+          
         </span>
+          <div className="mt-1 text-xs text-gray-400 italic">
+            {mode === "harsh" && "때론 아픈 진실이 성장의 시작이 됩니다."}
+            {mode === "comfort" && "마음을 다독이는 따뜻한 위로를 전해줍니다."}
+            {mode === "random" && "예상치 못한 문장에서 영감을 얻어보세요."}
+          </div>
       </div>
 
       {/* 입력 + 버튼 */}
@@ -127,7 +132,9 @@ export default function Home() {
       </div>
 
       <p className="text-xs text-gray-500">
-        ↵ <b>Enter</b>로 보내기 / <b>Shift+Enter</b>로 줄바꿈
+       ✅ 안녕하세요! 저희는 문장이 중심이되 독서 문화를 기획한 있는 책봍 팀 입니다.<br></br>
+       ⚠️ 검색 기록은 익명으로 저장돼 데이터 분석 등에 활용 됩니다. <br></br>
+       💥 저희 책봍을 사용하시고 다양한 의견이 있다면 아래로 연락주세요. 
       </p>
 
       {/* 상태 표시 */}

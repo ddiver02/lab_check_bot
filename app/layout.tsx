@@ -41,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </>
         )}
       </head>
-      <body className={`${serif.variable} font-serif min-h-screen bg-gray-50 text-gray-900`}>
+      <body className={`${serif.variable} font-serif min-h-screen bg-white text-gray-900`}>
         <header className="border-b bg-white">
           <nav className="mx-auto max-w-4xl flex items-center justify-between p-4">
             <div className="font-semibold flex items-center gap-2">
