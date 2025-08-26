@@ -1,25 +1,23 @@
+// AnalyticsProvider.tsx
 "use client";
 
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
-type Props = { gaId: string };
-
-export default function AnalyticsGA4({ gaId }: Props) {
+export default function AnalyticsGA4({ gaId }: { gaId: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (!gaId || typeof window === "undefined" || !window.gtag) return;
+    if (!gaId) return;
 
-    const url =
-      (pathname || "/") +
-      (searchParams && searchParams.toString() ? `?${searchParams.toString()}` : "");
+    const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : "");
 
-    window.gtag("event", "page_view", {
-      page_location: window.location.origin + url,
+    // page_view 전송
+    window.gtag?.("event", "page_view", {
+      page_location: typeof window !== "undefined" ? window.location.href : url,
       page_path: url,
-      page_title: document.title,
+      page_title: document?.title ?? "",
       send_to: gaId,
     });
   }, [gaId, pathname, searchParams]);
