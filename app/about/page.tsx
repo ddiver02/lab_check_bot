@@ -9,7 +9,7 @@ export default function About() {
           <a href="https://docs.google.com/forms/d/e/1FAIpQLSci5XJsRBr4wuh211ysvqtz-zmOErh-Y3wZSuc6eLDPnVOHKw/viewform" className="rounded-lg border p-4 hover:bg-gray-50" target="_blank">
             💥 책봍 설문조사 참여하기
           </a>
-          <a href="https://www.instagram.com/check._.bot/" className="rounded-lg border p-4 hover:bg-gray-50" target="_blank">
+          <a href="https://www.instagram.com/check._.bot/?utm_source=website&utm_medium=aboutus" className="rounded-lg border p-4 hover:bg-gray-50" target="_blank">
             👀 책봍 인스타 구경하기
           </a>
           <a href="https://docs.google.com/forms/d/e/1FAIpQLSdslKYusOwWJ7ELjvD81MYe5dxXQSWpYQDodLICE4adxTlwQg/viewform?usp=header" className="rounded-lg border p-4 hover:bg-gray-50" target="_blank">
