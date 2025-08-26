@@ -9,57 +9,39 @@ export default function AnalyticsGA4({ gaId }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // 최초 진입 시 UTM 파라미터 저장
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const source = params.get("utm_source");
-    const medium = params.get("utm_medium");
-    const campaign = params.get("utm_campaign");
-    const content = params.get("utm_content");
-
-    if (source || medium || campaign || content) {
-      localStorage.setItem(
-        "utm",
-        JSON.stringify({ source, medium, campaign, content })
-      );
-    }
-  }, []);
-
-  // page_view를 쏘는 함수
   const sendPageView = () => {
-     if (typeof window === "undefined") return;
-  if (typeof window.gtag !== "function") return;
-  const url = pathname + (searchParams?.toString() ? `?${searchParams}` : "");
+    if (typeof window === "undefined") return;
+    if (typeof window.gtag !== "function") return;
 
-  // 1) UTM 파라미터 있으면 localStorage에 저장
-  if (searchParams) {
-    const utmParams: Record<string, string> = {};
-    ["utm_source", "utm_medium", "utm_campaign", "utm_content"].forEach((k) => {
-      const v = searchParams.get(k);
-      if (v) utmParams[k] = v;
+    // URL path + querystring
+    const url = pathname + (searchParams?.toString() ? `?${searchParams}` : "");
+
+    // UTM 파라미터 추출
+    const utm: Record<string, string> = {};
+    ["utm_source", "utm_medium", "utm_campaign", "utm_content"].forEach((key) => {
+      const value = searchParams?.get(key);
+      if (value) utm[key] = value;
     });
-    if (Object.keys(utmParams).length > 0) {
-      localStorage.setItem("utm", JSON.stringify(utmParams));
+
+    // localStorage에도 저장 (세션 내 유지)
+    if (Object.keys(utm).length > 0) {
+      localStorage.setItem("utm", JSON.stringify(utm));
     }
-  }
 
-  // 2) localStorage에서 꺼내오기
-  const utm = JSON.parse(localStorage.getItem("utm") || "{}");
+    // 이전에 저장된 UTM 불러오기
+    const storedUtm = JSON.parse(localStorage.getItem("utm") || "{}");
 
-  // 3) GA4 page_view 이벤트 전송
-  window.gtag("event", "page_view", {
-    page_path: url,
-    page_location: window.location.href,
-    page_title: document.title,
-    ...utm, // ← utm_source, utm_medium, utm_campaign 같이 전달
-  });
+    // page_view 이벤트 전송
+    window.gtag("event", "page_view", {
+      page_path: url,
+      page_location: window.location.href,
+      page_title: document.title,
+      ...storedUtm, // ✅ 여기서 UTM이 항상 전달되게
+    });
   };
 
-  // 초기 1회 + 라우트 변경 시 전송
   useEffect(() => {
     sendPageView();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gaId, pathname, searchParams]);
 
   return null;
