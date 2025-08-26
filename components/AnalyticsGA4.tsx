@@ -1,5 +1,5 @@
 // components/AnalyticsGA4.tsx
-"use client";
+/*"use client";
 
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -23,4 +23,4 @@ export default function AnalyticsGA4({ gaId }: Props) {
   }, [pathname, search, gaId]);
 
   return null;
-}
+}*/

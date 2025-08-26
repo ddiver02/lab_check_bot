@@ -3,9 +3,8 @@ import Link from "next/link";
 import Script from "next/script";
 import "./globals.css";
 import { Noto_Serif_KR } from "next/font/google";
-import AnalyticsGA4 from "@/components/AnalyticsGA4"; // ✅ 클라이언트 컴포넌트 임포트
+import AnalyticsGA4 from "@/AnalyticsProvider";
 import Image from "next/image";
-
 
 const serif = Noto_Serif_KR({
   subsets: ["latin"],
@@ -22,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID;
 
   return (
-    <html lang="ko">
+    <html lang="ko" className={serif.variable}>
       <head>
         {GA4_ID && (
           <>
@@ -43,20 +42,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </>
         )}
       </head>
-      <body className={`${serif.variable} font-serif min-h-screen bg-gray-50 text-gray-900`}>
+      <body className="font-serif min-h-screen bg-gray-50 text-gray-900">
         <header className="border-b bg-white">
           <nav className="mx-auto max-w-4xl flex items-center justify-between p-4">
-            <div className="font-semibold">
-              
+            <Link href="/" aria-label="홈으로 이동" className="flex items-center gap-2">
               <Image
-                src="/bot_fav.png"   
+                src="/bot_fav.png"
                 alt="서비스 로고"
                 width={40}
                 height={40}
+                priority
               />
-              <span className="font-semibold text-lg">책봍</span>
+              <span className="font-semibold text-lg">책봇</span>
+            </Link>
 
-            </div>
             <div className="flex gap-4 text-sm">
               <Link href="/" className="hover:underline">Home</Link>
               <Link href="/about" className="hover:underline">About us</Link>
