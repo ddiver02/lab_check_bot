@@ -1,25 +1,33 @@
-// AnalyticsProvider.tsx
 "use client";
 
-import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
-export default function AnalyticsGA4({ gaId }: { gaId: string }) {
+type Props = { gaId: string };
+
+export default function AnalyticsGA4({ gaId }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  useEffect(() => {
-    if (!gaId) return;
+  // page_view를 한 번 쏘는 함수
+  const sendPageView = () => {
+    if (typeof window === "undefined") return;
+    if (typeof window.gtag !== "function") return;
+    const url = pathname + (searchParams?.toString() ? `?${searchParams}` : "");
 
-    const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : "");
-
-    // page_view 전송
-    window.gtag?.("event", "page_view", {
-      page_location: typeof window !== "undefined" ? window.location.href : url,
+    window.gtag("event", "page_view", {
       page_path: url,
-      page_title: document?.title ?? "",
-      send_to: gaId,
+      page_location: window.location.href,
+      page_title: document.title,
+      // 필요시 디버그 플래그
+      // debug_mode: true,
     });
+  };
+
+  // 초기 1회 + 라우트 변경 시 전송
+  useEffect(() => {
+    sendPageView();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gaId, pathname, searchParams]);
 
   return null;
