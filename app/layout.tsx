@@ -35,7 +35,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){window.dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', '${GA4_ID}', { send_page_view: false });
+                gtag('config', '${GA4_ID}', { send_page_view: false,
+  allow_ad_personalization_signals: true });
               `}
             </Script>
           </>
