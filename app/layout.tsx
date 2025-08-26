@@ -4,6 +4,8 @@ import Script from "next/script";
 import "./globals.css";
 import { Noto_Serif_KR } from "next/font/google";
 import AnalyticsGA4 from "@/components/AnalyticsGA4"; // ✅ 클라이언트 컴포넌트 임포트
+import Image from "next/image";
+
 
 const serif = Noto_Serif_KR({
   subsets: ["latin"],
@@ -44,7 +46,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${serif.variable} font-serif min-h-screen bg-gray-50 text-gray-900`}>
         <header className="border-b bg-white">
           <nav className="mx-auto max-w-4xl flex items-center justify-between p-4">
-            <div className="font-semibold">MVP</div>
+            <div className="font-semibold">
+              
+              <Image
+                src="/bot_fav.png"   
+                alt="서비스 로고"
+                width={40}
+                height={40}
+              />
+              <span className="font-semibold text-lg">책봍</span>
+
+            </div>
             <div className="flex gap-4 text-sm">
               <Link href="/" className="hover:underline">Home</Link>
               <Link href="/about" className="hover:underline">About us</Link>
