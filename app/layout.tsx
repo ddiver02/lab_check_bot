@@ -5,6 +5,7 @@ import "./globals.css";
 import { Noto_Serif_KR } from "next/font/google";
 import Image from "next/image";
 import AnalyticsGA4 from "@/AnalyticsProvider"; // 클라이언트 컴포넌트
+import { Analytics } from "@vercel/analytics/next"
 
 export const metadata = {
   title: "MVP Landing",
@@ -55,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </nav>
         </header>
-
+        <Analytics/>
         <main className="mx-auto max-w-4xl p-6">{children}</main>
 
         <footer className="mx-auto max-w-4xl p-6 text-xs text-gray-500">
