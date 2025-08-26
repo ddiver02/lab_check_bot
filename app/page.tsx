@@ -11,10 +11,27 @@ const MODE_LABELS: Record<Mode, string> = {
   random: "Random vibe",
 };
 
-const LOADING_TEXT: Record<Mode, string> = {
-  harsh: "😬 테스형이 쓴소리 준비 중…",
-  comfort: "🤗 따뜻한 한마디 찾는 중…",
-  random: "🎲 오늘의 랜덤 vibe 뽑는 중…",
+const LOADING_TEXT: Record<Mode, string[]> = {
+  harsh: 
+  ["😬 테스형이 쓴소리 준비 중…",
+    "🪓 현실 직격탄 문장 고르는 중…",
+    "⚡ 강한자만이 살아 남는다!",
+    "🔥 오늘은 다 해낸다 모드로!",
+  ],
+  comfort: 
+  [
+   "🤗 따뜻한 한마디 찾는 중…",
+    "💖 넌 이 세상에서 최고야",
+    "🌿 나 자신을 위한 시간이 되길",
+    "☕ 차분한 공감의 구절 준비 중…",
+  ],
+  random: 
+  [
+    "🎲 오늘의 vibe 뽑는 중…",
+    "📚 또 알아? 각성할지?",
+    "🌟 영감이 될 문장을 찾는 중…",
+    "✨ 어쩌면 인생 문장을 찾을 지도?",
+  ],
 };
 
 export default function Home() {
@@ -114,8 +131,8 @@ export default function Home() {
           onKeyDown={onKeyDown}
           placeholder={
             mode === "random"
-              ? "입력 없이도 랜덤 vibe 뽑기 가능"
-              : "예) 면접 앞두고 떨려서 잠이 안 와"
+              ? "예) 동기부여가 필요해"
+              : "예) 행복은 내가 만드는거야!"
           }
           className="flex-1 rounded-lg border p-3 outline-none"
         />
@@ -130,12 +147,6 @@ export default function Home() {
           보내기
         </button>
       </div>
-
-      <p className="text-xs text-gray-500">
-       ✅ 안녕하세요! 저희는 문장이 중심이되 독서 문화를 기획한 있는 책봍 팀 입니다.<br></br>
-       ⚠️ 검색 기록은 익명으로 저장돼 데이터 분석 등에 활용 됩니다. <br></br>
-       💥 저희 책봍을 사용하시고 다양한 의견이 있다면 아래로 연락주세요. 
-      </p>
 
       {/* 상태 표시 */}
       {loading && (
@@ -192,7 +203,9 @@ export default function Home() {
             </button>
           </div>
         </div>
+
       )}
     </section>
+    
   );
 }

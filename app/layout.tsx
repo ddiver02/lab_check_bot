@@ -47,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <nav className="mx-auto max-w-4xl flex items-center justify-between p-4">
             <div className="flex items-center gap-2">
               <Image src="/bot_fav.png" alt="서비스 로고" width={36} height={36} />
-              <span className="font-semibold text-lg">책봇</span>
+              <span className="font-semibold text-lg">책봍</span>
             </div>
             <div className="flex gap-4 text-sm">
               <Link href="/" className="hover:underline">Home</Link>
@@ -58,7 +58,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <main className="mx-auto max-w-4xl p-6">{children}</main>
 
-        <footer className="mx-auto max-w-4xl p-6 text-xs text-gray-500">© MVP</footer>
+        <footer className="mx-auto max-w-4xl p-6 text-xs text-gray-500">
+          <p className="text-xs text-gray-500">
+       ✅ 안녕하세요! 책봍 팀 입니다.<br></br>
+       ⚠️ 검색 기록은 익명으로 저장되며 데이터 분석에 활용 후 폐기 됩니다. <br></br>
+       💥 저희 책봍을 사용하시고 About us에서 의견을 남겨주세요. 
+      </p>
+      <br></br>
+          
+          © 책봍
+          
+          </footer>
 
         {/* SPA 라우팅 시 page_view 보완 */}
         {GA4_ID && <AnalyticsGA4 gaId={GA4_ID} />}
