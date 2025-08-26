@@ -139,8 +139,8 @@ export default function Home() {
           onKeyDown={onKeyDown}
           placeholder={
             mode === "random"
-              ? "입력 없이도 랜덤 vibe 가능 (예: 동기부여가 필요해)"
-              : "예) 면접 앞두고 떨려서 잠이 안 와"
+              ? "예) 인생이란?"
+              : "예) 나 잘 할 수 있을까?"
           }
           className="flex-1 rounded-lg border p-3 outline-none"
         />
