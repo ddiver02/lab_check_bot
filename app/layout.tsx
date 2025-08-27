@@ -56,8 +56,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </nav>
         </header>
-        <Analytics/>
-        <main className="mx-auto max-w-4xl p-6">{children}</main>
+        
+        <main className="mx-auto max-w-4xl p-6">{children}
+        <Analytics/>  
+        </main>
 
         <footer className="mx-auto max-w-4xl p-6 text-xs text-gray-500">
           <p className="text-xs text-gray-500">
