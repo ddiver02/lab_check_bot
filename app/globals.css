@@ -24,6 +24,7 @@
 /* Tailwind base + custom mapping */
 @layer base {
   body {
+    background-color: rgb(255, 255, 255); /* Explicitly set a widely supported color */
     background: var(--background);
     color: var(--foreground);
     font-family: var(--font-serif-kr), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
