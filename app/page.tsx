@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { Mode, MinimalQuote } from "../types/app.d";
 import { MODE_LABELS, LOADING_TEXT } from "../lib/constants";
+import { fetchQuote } from "../lib/api";
 import Headline from "../components/Headline";
 import ModeSelector from "../components/ModeSelector";
 import InputForm from "../components/InputForm";
@@ -47,13 +48,7 @@ export default function Home() {
 
     setLoading(true);
     try {
-      const r = await fetch("/api/rag", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: safeQuery, mode }),
-      });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data?.error || "요청 실패");
+      const data = await fetchQuote(safeQuery, mode);
       setRes(data as MinimalQuote);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "알 수 없는 오류";
