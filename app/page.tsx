@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 
 import { Mode, MinimalQuote } from "../types/app.d";
-import { MODE_LABELS, LOADING_TEXT } from "../lib/constants";
+import { LOADING_TEXT } from "../lib/constants";
 import { fetchQuote } from "../lib/api";
 import Headline from "../components/Headline";
 import ModeSelector from "../components/ModeSelector";

@@ -15,7 +15,14 @@ export async function fetchQuote(query: string, mode: Mode): Promise<MinimalQuot
     throw new Error(`서버 오류(비JSON 응답): ${text.slice(0, 120)}...`);
   }
 
-  const data = await r.json();
-  if (!r.ok) throw new Error((data as any)?.error || "요청 실패");
+  const data: unknown = await r.json();
+  if (!r.ok) {
+    const msg =
+      data && typeof data === "object" && "error" in data &&
+      typeof (data as { error?: unknown }).error === "string"
+        ? (data as { error: string }).error
+        : "요청 실패";
+    throw new Error(msg);
+  }
   return data as MinimalQuote;
 }

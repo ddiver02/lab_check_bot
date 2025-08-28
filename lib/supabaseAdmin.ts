@@ -10,5 +10,8 @@ export function getSupabaseAdmin() {
   if (missing.length > 0) {
     throw new Error(`Missing environment variables: ${missing.join(", ")}`);
   }
-  return createClient(supabaseUrl, supabaseServiceRoleKey, { auth: { persistSession: false } });
+  // 타입 안전: 누락 검사 후 명시적 캐스팅
+  const url: string = supabaseUrl as string;
+  const key: string = supabaseServiceRoleKey as string;
+  return createClient(url, key, { auth: { persistSession: false } });
 }
