@@ -2,20 +2,20 @@
 import Link from "next/link";
 import Script from "next/script";
 import "./globals.css";
-import { Noto_Serif_KR } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next"
+import { Noto_Sans_KR } from "next/font/google";
 import Image from "next/image";
 import AnalyticsGA4 from "@/AnalyticsProvider"; // 클라이언트 컴포넌트
-import { Analytics } from "@vercel/analytics/next"
 
 export const metadata = {
-  title: "MVP Landing",
-  description: "Simple 2-page MVP",
+  title: "📚 책봍 🤖",
+  description: "안녕하세요 책봍 입니다. 우리는 사용자가 입력한 상황 또는 감정에 적합한 인용구를 찾아주는 AI 기반의 서비스를 제공합니다.",
 };
 
-const serif = Noto_Serif_KR({
+const notoSansKr = Noto_Sans_KR({
   subsets: ["latin"],
   weight: ["400", "500", "700"],
-  variable: "--font-serif-kr",
+  variable: "--font-noto-sans-kr",
 });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -43,7 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </>
         )}
       </head>
-      <body className={`${serif.variable} font-serif min-h-screen bg-white text-gray-900`}>
+      <body className={`${notoSansKr.variable} font-sans min-h-screen bg-white text-gray-900`}>
         <header className="border-b bg-white">
           <nav className="mx-auto max-w-4xl flex items-center justify-between p-4">
             <div className="flex items-center gap-2">
@@ -62,14 +62,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </main>
 
         <footer className="mx-auto max-w-4xl p-6 text-xs text-gray-500">
-          <p className="text-xs text-gray-500">
-       ✅ 안녕하세요! 책봍 팀 입니다.<br></br>
-       ⚠️ 검색 기록은 익명으로 저장되며 데이터 분석에 활용 후 폐기 됩니다. <br></br>
-       💥 저희 책봍을 사용하시고 About us에서 의견을 남겨주세요. 
+          <p className="text-xs text-gray-400 text-center">
+       검색 기록은 데이터 분석에 활용 후 폐기 됩니다. <br></br>
+       
       </p>
       <br></br>
           
-          © 책봍
+        <p className="text-center">  © 책봍</p>
           
           </footer>
 

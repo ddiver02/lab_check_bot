@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { serverEnv } from "@/lib/runtimeEnv";
 
 type CandidateRow = {
   id: number;
@@ -67,6 +68,33 @@ async function fetchRandomQuote() {
   return minimal;
 }
 
+// 최종 결과 확보 후 상호작용 로그 (필수 컬럼 모두 채워서 insert)
+async function logInteraction(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  params: {
+    user_input: string;
+    selected_mode: Mode;
+    provided_quote: string;
+    quote_author: string;
+    quote_source?: string | null;
+  }
+) {
+  try {
+    await admin.from("user_interactions").insert({
+      user_input: params.user_input,
+      selected_mode: params.selected_mode,
+      provided_quote: params.provided_quote,
+      quote_author: params.quote_author,
+      quote_source: params.quote_source ?? null,
+    });
+  } catch (e) {
+    if (process.env.DEV_LOG_DB === "1") {
+      // 개발 시에만 상세 에러 로그
+      console.error("DB insert user_interactions failed", e);
+    }
+  }
+}
+
 // ─────────────────────────────────────────────
 // 핸들러
 // ─────────────────────────────────────────────
@@ -96,7 +124,20 @@ export async function POST(req: Request) {
     );
   }
 
-  const admin = getSupabaseAdmin();
+  // 0.5) 서버 필수 env 검증 (명확한 에러 반환)
+  let admin;
+  try {
+    admin = getSupabaseAdmin();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json(
+      {
+        error: msg,
+        hint: "Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local",
+      },
+      { status: 500 }
+    );
+  }
 
   // 1) 캐시 조회 (모드+질의 키)
   const queryHash = hashQuery(query, mode);
@@ -124,10 +165,7 @@ export async function POST(req: Request) {
     // 캐시 조회 실패해도 진행
   }
 
-  // 2) 질의 로그 (best-effort)
-  try {
-    await admin.from("messages").insert({ content: mode === "random" ? "[RANDOM]" : query });
-  } catch { /* ignore */ }
+  // 2) 질의 로그는 최종 결과가 확정된 뒤에 user_interactions로 기록
 
   // 3) 랜덤 모드 → DB에서 바로 랜덤 1개 (Cloud Run/Genkit 호출 없음)
   if (mode === "random") {
@@ -144,6 +182,14 @@ export async function POST(req: Request) {
           created_at: new Date().toISOString(),
         });
       } catch { /* ignore */ }
+      // 최종 결과 확보 후 상호작용 로그
+      await logInteraction(admin, {
+        user_input: (raw.query ?? "").trim() || "[RANDOM]",
+        selected_mode: mode,
+        provided_quote: minimal.quote,
+        quote_author: minimal.author,
+        quote_source: minimal.source,
+      });
       return NextResponse.json(minimal, { status: 200 });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -153,10 +199,10 @@ export async function POST(req: Request) {
 
   // 4) 벡터 유사도 검색 (harsh/comfort)
   try {
-    const apiKey = process.env.GOOGLE_API_KEY;
-    if (!apiKey) throw new Error("Missing GOOGLE_API_KEY");
+    const { googleApiKey } = serverEnv();
+    if (!googleApiKey) throw new Error("Missing GOOGLE_API_KEY (PROD_/STG_)");
 
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const genAI = new GoogleGenerativeAI(googleApiKey);
     const embedder = genAI.getGenerativeModel({ model: "text-embedding-004" });
     const emb = await embedder.embedContent(query);
     const queryVec = emb.embedding.values;
@@ -202,7 +248,14 @@ export async function POST(req: Request) {
           created_at: new Date().toISOString(),
         });
       } catch { /* ignore */ }
-
+      // 최종 결과 확보 후 상호작용 로그
+      await logInteraction(admin, {
+        user_input: query,
+        selected_mode: mode,
+        provided_quote: minimal.quote,
+        quote_author: minimal.author,
+        quote_source: minimal.source,
+      });
       return NextResponse.json(minimal, { status: 200 });
     }
   } catch {
@@ -223,6 +276,14 @@ export async function POST(req: Request) {
         created_at: new Date().toISOString(),
       });
     } catch { /* ignore */ }
+    // 최종 결과 확보 후 상호작용 로그
+    await logInteraction(admin, {
+      user_input: query,
+      selected_mode: mode,
+      provided_quote: minimal.quote,
+      quote_author: minimal.author,
+      quote_source: minimal.source,
+    });
     return NextResponse.json(minimal, { status: 200 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

@@ -11,7 +11,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
   if (!res) return null;
 
   return (
-    <div className="mt-2 rounded-xl border p-5 bg-white">
+    <div className="mt-2 rounded-xl p-5 bg-white text-center">
       <blockquote className="text-lg leading-relaxed">
         “{res.quote}”
       </blockquote>
@@ -26,11 +26,14 @@ const ResultCard: React.FC<ResultCardProps> = ({
       </div>
 
       {/* 공유 버튼 */}
-      <div className="mt-4">
+      <div className="mt-4 flex justify-end">
         <button
           onClick={async () => {
             const shareText = `“${res.quote}” — ${res.author}${res.source ? ` · ${res.source}` : ""}`;
-            const shareUrl = `${window.location.origin}/?quote=${encodeURIComponent(res.quote)}&author=${encodeURIComponent(res.author)}&source=${encodeURIComponent(res.source || '')}`;
+            const shareUrl =
+              typeof window !== "undefined"
+                ? window.location.origin
+                : "";
 
             if (navigator.share) {
               try {
@@ -45,7 +48,8 @@ const ResultCard: React.FC<ResultCardProps> = ({
             } else {
               try {
                 await navigator.clipboard.writeText(
-                  `${shareText}\n${shareUrl}`
+                  `${shareText}
+${shareUrl}`
                 );
                 alert("복사되었습니다. 원하는 곳에 붙여넣기 해주세요!");
               } catch {
@@ -53,9 +57,9 @@ const ResultCard: React.FC<ResultCardProps> = ({
               }
             }
           }}
-          className="text-sm rounded-lg border px-3 py-2 hover:bg-gray-50"
+          className="text-sm underline bg-transparent shadow-none p-0"
         >
-          책봍 링크 공유하기
+          공유하기
         </button>
       </div>
     </div>

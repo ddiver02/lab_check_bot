@@ -1,13 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
+import { serverEnv } from "./runtimeEnv";
 
 export function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY // 권장 이름
-    ?? process.env.SUPABASE_SERVICE_ROLE; // 혹시 예전 이름을 썼다면 폴백
+  const { supabaseUrl, supabaseServiceRoleKey } = serverEnv();
 
-  if (!url || !key) {
-    throw new Error("Missing Supabase server envs (URL or SERVICE_ROLE_KEY).");
+  const missing: string[] = [];
+  if (!supabaseUrl) missing.push("SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL)");
+  if (!supabaseServiceRoleKey) missing.push("SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SERVICE_ROLE)");
+  if (missing.length > 0) {
+    throw new Error(`Missing environment variables: ${missing.join(", ")}`);
   }
-  return createClient(url, key, { auth: { persistSession: false } });
+  return createClient(supabaseUrl, supabaseServiceRoleKey, { auth: { persistSession: false } });
 }
