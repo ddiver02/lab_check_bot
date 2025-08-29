@@ -68,7 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </p>
       <br></br>
           
-        <p className="text-center">  © 책봍</p>
+        <p className="text-center">  ©책봍</p>
           
           </footer>
 
