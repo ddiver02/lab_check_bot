@@ -99,7 +99,7 @@ export default function Home() {
 
       {/* 상태 표시 */}
       <StatusDisplay loading={loading} loadingIdx={loadingIdx} mode={mode} err={err} />
-
+      
       {/* 결과 카드 */}
       {/* ResultCard는 이제 Modal 내부에 렌더링됩니다. */}
 

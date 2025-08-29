@@ -3,7 +3,6 @@ export const runtime = "nodejs";                 // Edge 아님
 export const preferredRegion = ["icn1", "hnd1"]; // 서울/도쿄 우선
 
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { serverEnv } from "@/lib/runtimeEnv";
@@ -19,22 +18,19 @@ type CandidateRow = {
 type Mode = "harsh" | "comfort" | "random";
 type RagRequest = { query?: string; mode?: Mode };
 type MinimalQuote = { quote: string; author: string; source: string };
+type MinimalQuoteWithId = MinimalQuote & { id: number };
 
 // ─────────────────────────────────────────────
 // 유틸
 // ─────────────────────────────────────────────
-function hashQuery(query: string, mode: Mode) {
-  return crypto.createHash("sha256").update(`${mode}|${query}`).digest("hex");
-}
-
-const CACHE_TTL_DAYS = 7;
+// Note: caching disabled — always compute fresh results
 
 // 매칭 파라미터 (완화)
 const VECTOR_THRESHOLD = 0.65; // ↓ 완화해서 매칭률 ↑
 const VECTOR_TOP_K = 3;
 
 // 랜덤 1개 가져오기 (fallback/랜덤모드 공용)
-async function fetchRandomQuote() {
+async function fetchRandomQuote(): Promise<MinimalQuoteWithId> {
   const admin = getSupabaseAdmin();
 
   // 총 개수 확인
@@ -52,7 +48,7 @@ async function fetchRandomQuote() {
   // offset에서 1개만 조회
   const { data, error } = await admin
     .from("quote_embeddings")
-    .select("quote, author, source")
+    .select("id, quote, author, source")
     .range(offset, offset); // LIMIT 1 with offset
 
   if (error || !data || data.length === 0) {
@@ -60,7 +56,8 @@ async function fetchRandomQuote() {
   }
 
   const row = data[0];
-  const minimal: MinimalQuote = {
+  const minimal: MinimalQuoteWithId = {
+    id: row.id as number,
     quote: row.quote,
     author: row.author,
     source: row.source,
@@ -69,28 +66,23 @@ async function fetchRandomQuote() {
 }
 
 // 최종 결과 확보 후 상호작용 로그 (필수 컬럼 모두 채워서 insert)
-async function logInteraction(
+async function logInputAndInteraction(
   admin: ReturnType<typeof getSupabaseAdmin>,
-  params: {
-    user_input: string;
-    selected_mode: Mode;
-    provided_quote: string;
-    quote_author: string;
-    quote_source?: string | null;
-  }
+  params: { user_input: string; selected_mode: Mode; quote_id: number }
 ) {
   try {
-    await admin.from("user_interactions").insert({
-      user_input: params.user_input,
+    await admin.from("user_input").insert({
+      input_text: params.user_input,
       selected_mode: params.selected_mode,
-      provided_quote: params.provided_quote,
-      quote_author: params.quote_author,
-      quote_source: params.quote_source ?? null,
+    });
+    await admin.from("user_interactions").insert({
+      input_text: params.user_input,
+      selected_mode: params.selected_mode,
+      quote_id: params.quote_id,
     });
   } catch (e) {
     if (process.env.DEV_LOG_DB === "1") {
-      // 개발 시에만 상세 에러 로그
-      console.error("DB insert user_interactions failed", e);
+      console.error("DB insert (user_input/user_interactions) failed", e);
     }
   }
 }
@@ -139,31 +131,7 @@ export async function POST(req: Request) {
     );
   }
 
-  // 1) 캐시 조회 (모드+질의 키)
-  const queryHash = hashQuery(query, mode);
-  try {
-    const { data: cached, error: cacheErr } = await admin
-      .from("quote_cache")
-      .select("quote, author, source, created_at")
-      .eq("query_hash", queryHash)
-      .maybeSingle();
-
-    if (!cacheErr && cached) {
-      const createdAt = new Date(cached.created_at);
-      const ageDays = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-      if (ageDays < CACHE_TTL_DAYS) {
-        const minimal: MinimalQuote = {
-          quote: cached.quote,
-          author: cached.author,
-          source: cached.source,
-        };
-        return NextResponse.json(minimal, { status: 200 });
-      }
-      // 만료면 계속 진행
-    }
-  } catch {
-    // 캐시 조회 실패해도 진행
-  }
+  // 1) 캐시 조회 제거: 항상 최신 결과 계산
 
   // 2) 질의 로그는 최종 결과가 확정된 뒤에 user_interactions로 기록
 
@@ -171,24 +139,12 @@ export async function POST(req: Request) {
   if (mode === "random") {
     try {
       const minimal = await fetchRandomQuote();
-      // 캐시 저장
-      try {
-        await admin.from("quote_cache").upsert({
-          query_hash: queryHash,
-          query_text: "[RANDOM]",
-          quote: minimal.quote,
-          author: minimal.author,
-          source: minimal.source,
-          created_at: new Date().toISOString(),
-        });
-      } catch { /* ignore */ }
+      // 캐시 저장 제거
       // 최종 결과 확보 후 상호작용 로그
-      await logInteraction(admin, {
+      await logInputAndInteraction(admin, {
         user_input: (raw.query ?? "").trim() || "[RANDOM]",
         selected_mode: mode,
-        provided_quote: minimal.quote,
-        quote_author: minimal.author,
-        quote_source: minimal.source,
+        quote_id: minimal.id,
       });
       return NextResponse.json(minimal, { status: 200 });
     } catch (e) {
@@ -236,25 +192,10 @@ export async function POST(req: Request) {
         author: top.author,
         source: top.source,
       };
-
-      // 캐시 저장
-      try {
-        await admin.from("quote_cache").upsert({
-          query_hash: queryHash,
-          query_text: query,
-          quote: minimal.quote,
-          author: minimal.author,
-          source: minimal.source,
-          created_at: new Date().toISOString(),
-        });
-      } catch { /* ignore */ }
-      // 최종 결과 확보 후 상호작용 로그
-      await logInteraction(admin, {
+      await logInputAndInteraction(admin, {
         user_input: query,
         selected_mode: mode,
-        provided_quote: minimal.quote,
-        quote_author: minimal.author,
-        quote_source: minimal.source,
+        quote_id: top.id,
       });
       return NextResponse.json(minimal, { status: 200 });
     }
@@ -265,24 +206,10 @@ export async function POST(req: Request) {
   // 5) 최종 폴백: DB 랜덤 1개 (Genkit 호출 제거 → timeout 방지)
   try {
     const minimal = await fetchRandomQuote();
-    // 캐시 저장
-    try {
-      await admin.from("quote_cache").upsert({
-        query_hash: queryHash,
-        query_text: "[FALLBACK_RANDOM]",
-        quote: minimal.quote,
-        author: minimal.author,
-        source: minimal.source,
-        created_at: new Date().toISOString(),
-      });
-    } catch { /* ignore */ }
-    // 최종 결과 확보 후 상호작용 로그
-    await logInteraction(admin, {
+    await logInputAndInteraction(admin, {
       user_input: query,
       selected_mode: mode,
-      provided_quote: minimal.quote,
-      quote_author: minimal.author,
-      quote_source: minimal.source,
+      quote_id: minimal.id,
     });
     return NextResponse.json(minimal, { status: 200 });
   } catch (e) {
