@@ -8,8 +8,8 @@ import Image from "next/image";
 import AnalyticsGA4 from "@/AnalyticsProvider"; // 클라이언트 컴포넌트
 
 export const metadata = {
-  title: "📚 책봍 🤖",
-  description: "안녕하세요 책봍 입니다. 우리는 사용자가 입력한 상황 또는 감정에 적합한 인용구를 찾아주는 AI 기반의 서비스를 제공합니다.",
+  title: "📚 책봍 테스트 페이지",
+  description: "여기스 테스트용 페이지 입니다.",
 };
 
 const notoSansKr = Noto_Sans_KR({
