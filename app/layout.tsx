@@ -5,7 +5,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next"
 import { Noto_Sans_KR } from "next/font/google";
 import Image from "next/image";
-import AnalyticsGA4 from "@/AnalyticsProvider"; // 클라이언트 컴포넌트
+import GTMProvider from "@/GTMProvider"; // 클라이언트 컴포넌트
 
 export const metadata = {
   title: "📚 책봍 테스트 페이지",
@@ -19,31 +19,34 @@ const notoSansKr = Noto_Sans_KR({
 });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID;
+  const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
 
   return (
     <html lang="ko">
       <head>
-        {GA4_ID && (
-          <>
-            {/* GA4 라이브러리 */}
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`}
-              strategy="afterInteractive"
-            />
-            {/* 초기화: 자동 page_view 활성화 (send_page_view: false 제거!) */}
-            <Script id="ga4-init" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){window.dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${GA4_ID}');
-              `}
-            </Script>
-          </>
+        {GTM_ID && (
+          <Script id="gtm-base" strategy="afterInteractive">
+            {`
+              (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+              'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+              })(window,document,'script','dataLayer','${GTM_ID}');
+            `}
+          </Script>
         )}
       </head>
       <body className={`${notoSansKr.variable} font-sans min-h-screen bg-white text-gray-900`}>
+        {GTM_ID && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+              height="0"
+              width="0"
+              style={{ display: 'none', visibility: 'hidden' }}
+            />
+          </noscript>
+        )}
         <header className="border-b bg-white">
           <nav className="mx-auto max-w-4xl flex items-center justify-between p-4">
             <div className="flex items-center gap-2">
@@ -72,8 +75,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           
           </footer>
 
-        {/* SPA 라우팅 시 page_view 보완 */}
-        {GA4_ID && <AnalyticsGA4 gaId={GA4_ID} />}
+        {/* SPA 라우팅 시 page_view 보완 (GTM dataLayer) */}
+        {GTM_ID && <GTMProvider />}
       </body>
     </html>
   );
