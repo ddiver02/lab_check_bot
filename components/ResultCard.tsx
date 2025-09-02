@@ -1,7 +1,6 @@
 "use client";
 import React from 'react';
 import { MinimalQuote } from "../types/app.d";
-import { Texturina } from 'next/font/google';
 
 interface ResultCardProps {
   res: MinimalQuote | null;

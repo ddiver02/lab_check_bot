@@ -5,6 +5,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next"
 import { Noto_Sans_KR } from "next/font/google";
 import Image from "next/image";
+import { Suspense } from "react";
 import GTMProvider from "@/GTMProvider"; // 클라이언트 컴포넌트
 
 export const metadata = {
@@ -77,7 +78,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </footer>
 
         {/* SPA 라우팅 시 page_view 보완 (GTM dataLayer) */}
-        {GTM_ID && <GTMProvider />}
+        {GTM_ID && (
+          <Suspense fallback={null}>
+            <GTMProvider />
+          </Suspense>
+        )}
       </body>
     </html>
   );
