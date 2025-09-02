@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  /* 부드러운 오프화이트 배경으로 텍스트 집중 강화 */
+  --background: #fafaf7;
   --foreground: #171717;
 }
 
@@ -48,5 +49,41 @@
   }
   .quote-meta {
     @apply mt-3 text-sm text-gray-600 font-sans;
+  }
+
+  /* 상단 헤더: 책을 연상시키는 미니멀 배경 */
+  .header-bookish {
+    /* 부드러운 오프화이트 그라디언트 */
+    background: linear-gradient(180deg, #fafaf7 0%, #f4f3ee 100%);
+    /* 종이 질감 느낌의 아주 미세한 패턴 레이어 */
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(0,0,0,0.02) 0 2px, transparent 3px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.015) 0 1px, transparent 1px 10px),
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.012) 0 1px, transparent 1px 12px);
+    background-blend-mode: multiply;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+
+  /* 브랜드 옆 작은 책갈피 모양 악센트 */
+  .bookmark-accent {
+    position: relative;
+    display: inline-block;
+    width: 10px;
+    height: 18px;
+    margin-left: 6px;
+    background: #e4572e; /* 따뜻한 레드-오렌지 */
+    border-radius: 3px 3px 0 0;
+  }
+  .bookmark-accent::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -5px;
+    margin: 0 auto;
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #e4572e;
   }
 }
