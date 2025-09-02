@@ -18,7 +18,7 @@ const StatusDisplay: React.FC<StatusDisplayProps> = ({
   return (
     <>
       {loading && (
-        <div className="text-sm text-gray-700">
+        <div className="text-sm text-gray-700 text-center">
           {LOADING_TEXT[mode][loadingIdx]}
         </div>
       )}
