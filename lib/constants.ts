@@ -1,7 +1,7 @@
 export const MODE_LABELS = {
   harsh: "뼈맞기",
   comfort: "공감받기",
-  random: "Random vibe",
+  random: "발견하기",
 };
 
 export const LOADING_TEXT = {

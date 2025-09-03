@@ -4,7 +4,8 @@ import { Mode, MinimalQuote } from "../types/app.d";
 // Option A: "/api/quote" -> next.config.ts의 rewrite로 Cloud Run API에 프록시
 // (NEXT_PUBLIC_GENKIT_API_URL이 설정되어 있어야 동작)
 export async function fetchQuote(query: string, mode: Mode): Promise<MinimalQuote> {
-  const r = await fetch("/api/quote", {
+  // 내부 API 라우트로 직접 호출 (외부 프록시 미사용 시 안정)
+  const r = await fetch("/api/rag", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query, mode }),

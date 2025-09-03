@@ -12,7 +12,7 @@ import ModeSelector from "../components/ModeSelector";
 import InputForm from "../components/InputForm";
 import StatusDisplay from "../components/StatusDisplay";
 import ResultCard from "../components/ResultCard";
-import Modal from "../components/Modal";
+import FloatingButton from "../components/FloatingButton";
 
 export default function Home() {
   const [text, setText] = useState("");
@@ -21,7 +21,7 @@ export default function Home() {
   const [loadingIdx, setLoadingIdx] = useState(0);
   const [res, setRes] = useState<MinimalQuote | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Modal 제거: 결과는 페이지 내에서 바로 표시
 
   // ⏱ 로딩 텍스트 랜덤 순환
   useEffect(() => {
@@ -55,7 +55,6 @@ export default function Home() {
       const data = await fetchQuote(safeQuery, mode);
       console.log('Frontend received data:', data);
       setRes(data as MinimalQuote);
-      setIsModalOpen(true); // Open modal on success
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "알 수 없는 오류";
       setErr(msg);
@@ -74,13 +73,10 @@ export default function Home() {
     }
   }
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setRes(null); // Clear result when modal closes
-  };
+  // 모달 제거로 close 핸들러 불필요
 
   return (
-    <section className="space-y-8 max-w-3xl mx-auto px-4">
+    <section className="page-home space-y-8 max-w-3xl mx-auto px-4">
       {/* 헤드라인 */}
       <Headline />
 
@@ -100,12 +96,9 @@ export default function Home() {
       {/* 상태 표시 */}
       <StatusDisplay loading={loading} loadingIdx={loadingIdx} mode={mode} err={err} />
       
-      {/* 결과 카드 */}
-      {/* ResultCard는 이제 Modal 내부에 렌더링됩니다. */}
-
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
-        <ResultCard res={res} />
-      </Modal>
+      {/* 결과 카드: 검색창 아래에 바로 표시 */}
+      <ResultCard res={res} />
+      <FloatingButton />
     </section>
   );
 }

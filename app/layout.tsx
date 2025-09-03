@@ -5,6 +5,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next"
 import { Noto_Sans_KR } from "next/font/google";
 import Image from "next/image";
+import { Suspense } from "react";
 import GTMProvider from "@/GTMProvider"; // 클라이언트 컴포넌트
 
 export const metadata = {
@@ -47,14 +48,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             />
           </noscript>
         )}
-        <header className="border-b bg-white">
+        <header className="header-bookish">
           <nav className="mx-auto max-w-4xl flex items-center justify-between p-4">
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-90">
               <Image src="/bot_fav.png" alt="서비스 로고" width={36} height={36} />
-              <span className="font-semibold text-lg">책봍</span>
-            </div>
-            <div className="flex gap-4 text-sm">
-              <Link href="/" className="hover:underline">Home</Link>
+              <span className="font-semibold layout-brand">책봍</span>
+            </Link>
+            <div className="flex gap-4 layout-nav">
               <Link href="/about" className="hover:underline">About us</Link>
             </div>
           </nav>
@@ -65,18 +65,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </main>
 
         <footer className="mx-auto max-w-4xl p-6 text-xs text-gray-500">
-          <p className="text-xs text-gray-400 text-center">
-       검색 기록은 데이터 분석에 활용 후 폐기 됩니다. <br></br>
+          <p className="layout-footer text-gray-400 text-center">
+       검색 기록은 익명이며 데이터 분석에 활용 후 폐기 됩니다. <br></br>
        
       </p>
       <br></br>
           
-        <p className="text-center">  ©책봍</p>
+        <p className="layout-footer text-center">  ©책봍</p>
           
           </footer>
 
         {/* SPA 라우팅 시 page_view 보완 (GTM dataLayer) */}
-        {GTM_ID && <GTMProvider />}
+        {GTM_ID && (
+          <Suspense fallback={null}>
+            <GTMProvider />
+          </Suspense>
+        )}
       </body>
     </html>
   );
