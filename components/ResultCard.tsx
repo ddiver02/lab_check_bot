@@ -53,7 +53,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
               title="더보기"
               target="_blank"
               rel="noopener noreferrer"
-              className="h-8 inline-flex items-center justify-center rounded-md border bg-amber-50 px-5 text-sm text-gray-700 hover:bg-gray-50"
+              className="h-8 inline-flex items-center justify-center rounded-md border bg-amber-50 px-5 text-sm text-gray-700 hover:bg-amber-100"
             >
               {rawTitle ? (
                 <>
@@ -75,7 +75,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
             const shareAutor = `- ${res.author}${res.source ? ` · 『${res.source}』` :""}`;
             // CTA: 홈페이지로 유도하여 버튼 느낌의 링크 텍스트 제공
             const shareUrl = typeof window !== "undefined" ? window.location.origin : "";
-            const ctaText = "[문장의 발견]";
+            const ctaText = "[하루 한 문장]";
 
             // Web Share: 일반 텍스트 + URL
             const payloadText = `${shareText}\n\n${shareAutor}`.trim();
