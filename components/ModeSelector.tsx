@@ -13,8 +13,13 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   setMode,
   loading,
 }) => {
-  const modes: Mode[] = ["harsh", "random", "comfort"];
+  const modes: Mode[] = ["comfort", "random", "harsh"];
   const activeIdx = modes.indexOf(mode);
+  const modeIcon: Record<Mode, string> = {
+    harsh: "/broken_bone.png",
+    random: "/surprise.png",
+    comfort: "/helping.png",
+  };
 
   return (
     <div className="w-full flex flex-col items-center gap-2">
@@ -36,19 +41,23 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
             onClick={() => setMode(m)}
             disabled={loading}
             className={[
-              "relative z-10 rounded-full px-3 py-1.5 text-xs font-medium text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+              "relative z-10 rounded-full px-6 py-1.5 text-xs font-medium text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 inline-flex items-center justify-center",
               mode === m ? "text-gray-900" : "hover:text-gray-800",
               loading ? "opacity-60 cursor-not-allowed" : "",
             ].join(" ")}
           >
-            {MODE_LABELS[m]}
+            <img
+              src={modeIcon[m]}
+              alt={MODE_LABELS[m]}
+              className="h-10 w-10 gap-4"
+            />
           </button>
         ))}
       </div>
-      <div className="text-xs text-gray-400 text-center">
-        {mode === "harsh" && "때론 아픈 진실이 성장의 시작이 됩니다."}
-        {mode === "comfort" && "마음을 다독이는 따뜻한 위로를 전해줍니다."}
-        {mode === "random" && "예상치 못한 문장에서 영감을 얻어보세요."}
+      <div className="text-xs text-gray-700 text-center">
+        {mode === "harsh" && "뼈맞기: 때론 아픈 진실이 성장의 시작이 됩니다."}
+        {mode === "comfort" && "공감: 마음을 다독이는 따뜻한 위로를 전해줍니다."}
+        {mode === "random" && "랜덤: 예상치 못한 문장에서 영감을 얻어보세요."}
       </div>
     </div>
   );

@@ -50,13 +50,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
         <header className="header-bookish">
           <nav className="mx-auto max-w-4xl flex items-center justify-between p-4">
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-90">
               <Image src="/bot_fav.png" alt="서비스 로고" width={36} height={36} />
               <span className="font-semibold layout-brand">책봍</span>
-              <span className="bookmark-accent" aria-hidden="true"></span>
-            </div>
+            </Link>
             <div className="flex gap-4 layout-nav">
-              <Link href="/" className="hover:underline">Home</Link>
               <Link href="/about" className="hover:underline">About us</Link>
             </div>
           </nav>
@@ -68,7 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <footer className="mx-auto max-w-4xl p-6 text-xs text-gray-500">
           <p className="layout-footer text-gray-400 text-center">
-       검색 기록은 데이터 분석에 활용 후 폐기 됩니다. <br></br>
+       검색 기록은 익명이며 데이터 분석에 활용 후 폐기 됩니다. <br></br>
        
       </p>
       <br></br>
