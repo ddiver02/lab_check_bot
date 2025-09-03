@@ -57,7 +57,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
             >
               {rawTitle ? (
                 <>
-                  <em>『{rawTitle}』</em>&nbsp;&nbsp;더 알아보기
+                  <em>『 {rawTitle} 』</em>&nbsp;&nbsp;더 알아보기
                 </>
               ) : (
                 "더 알아보기"
