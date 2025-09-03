@@ -20,29 +20,59 @@ const ResultCard: React.FC<ResultCardProps> = ({
           className="mx-auto mb-3 h-8 w-auto"
         />
         <blockquote className="quote-text">
-          『{res.quote}』
+          &quot;{res.quote}&quot;
         </blockquote>
         <div className="quote-meta">
           — <span className="font-medium">{res.author}</span>
           {res.source ? (
             <span>
               {" "}
-              · <em>{res.source}</em>
+              · <em>『{res.source}』</em>
             </span>
           ) : null}
         </div>
       </div>
 
-      {/* 공유 버튼 (미니멀 아이콘) */}
+      {/* 공유 버튼 + 더보기 버튼 */}
       <div className="mt-4 flex justify-end gap-3">
+        {/* 더보기: 교보문고 검색으로 리다이렉트 */}
+        {(() => {
+          const author = res.author || "";
+          const rawTitle = res.source || "";
+          // 책 제목을 『 』 꺾쇠로 감싸기
+          const titled = rawTitle ? `『${rawTitle}』` : "";
+          const keyword = [author, titled]
+            .filter(Boolean)
+            .map((v) => encodeURIComponent(v))
+            .join("+");
+          const kyoboUrl = `https://search.kyobobook.co.kr/search?keyword=${keyword}&gbCode=TOT&target=total`;
+          return (
+            <a
+              href={kyoboUrl}
+              aria-label="더보기"
+              title="더보기"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-8 inline-flex items-center justify-center rounded-md border bg-amber-50 px-5 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              {rawTitle ? (
+                <>
+                  <em>『{rawTitle}』</em>&nbsp;&nbsp;더 알아보기
+                </>
+              ) : (
+                "더 알아보기"
+              )}
+            </a>
+          );
+        })()}
         <button
           aria-label="공유하기"
           title="공유하기"
           className="h-8 w-8 inline-flex items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
           onClick={async () => {
             const title = "한 문장을 선물합니다";
-            const shareText = `『${res.quote}』`;
-            const shareAutor = `- ${res.author}${res.source ? ` · ${res.source}` :""}`;
+            const shareText = `${res.quote}`;
+            const shareAutor = `- ${res.author}${res.source ? ` · 『${res.source}』` :""}`;
             // CTA: 홈페이지로 유도하여 버튼 느낌의 링크 텍스트 제공
             const shareUrl = typeof window !== "undefined" ? window.location.origin : "";
             const ctaText = "[문장의 발견]";

@@ -12,6 +12,7 @@ import ModeSelector from "../components/ModeSelector";
 import InputForm from "../components/InputForm";
 import StatusDisplay from "../components/StatusDisplay";
 import ResultCard from "../components/ResultCard";
+import FloatingButton from "../components/FloatingButton";
 
 export default function Home() {
   const [text, setText] = useState("");
@@ -97,6 +98,7 @@ export default function Home() {
       
       {/* 결과 카드: 검색창 아래에 바로 표시 */}
       <ResultCard res={res} />
+      <FloatingButton />
     </section>
   );
 }
