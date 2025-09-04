@@ -17,7 +17,7 @@ const FloatingButton: React.FC = () => {
       >
         <img src="/bot_fav.png" alt="의견 보내기" className="h-8 w-8" />
       </a>
-      <span className="text-xs text-gray-700">의견 보내기</span>
+      <span className="text-xs text-gray-700">더그리 밥주기</span>
     </div>
   );
 };
