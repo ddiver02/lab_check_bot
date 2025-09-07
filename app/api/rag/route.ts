@@ -33,50 +33,16 @@ type MinimalQuoteWithId = MinimalQuote & { id: number };
 // ─────────────────────────────────────────────
 // Note: caching disabled — always compute fresh results
 
-// 매칭 파라미터 (env로 조정 가능)
-const VECTOR_THRESHOLD = (() => {
-  const raw = process.env.RAG_VECTOR_THRESHOLD;
-  const v = raw !== undefined ? Number(raw) : NaN;
-  if (Number.isFinite(v)) return Math.min(Math.max(v, 0), 1);
-  return 0.65; // default: 조금 더 완화
-})();
-
-const VECTOR_TOP_K = (() => {
-  const raw = process.env.RAG_VECTOR_TOP_K;
-  const v = raw !== undefined ? Number(raw) : NaN;
-  if (Number.isFinite(v)) return Math.max(1, Math.floor(v));
-  return 3;
-})();
-
-// 결과 다양성 제어용 샘플링 온도 (낮을수록 1위에 가깝게, 높을수록 다양성↑)
-const SAMPLING_TEMPERATURE = (() => {
-  const raw = process.env.RAG_SAMPLING_TEMP;
-  const v = raw !== undefined ? Number(raw) : NaN;
-  if (Number.isFinite(v) && v > 0) return v;
-  return 0.35; // default
-})();
+// 매칭 파라미터 (하드코딩)
+const VECTOR_THRESHOLD = 0.55; // 유사도 임계값(낮을수록 후보↑)
+const VECTOR_TOP_K = 5;        // 상위 후보 개수
+// 결과 다양성 제어용 샘플링 온도 (낮을수록 1위에 집중, 높을수록 다양성↑)
+const SAMPLING_TEMPERATURE = 0.35;
 
 // Random 모드 전용(입력이 있을 때 느슨하게 영감/인사이트 위주 매칭)
-const RANDOM_VECTOR_THRESHOLD = (() => {
-  const raw = process.env.RAG_RANDOM_THRESHOLD;
-  const v = raw !== undefined ? Number(raw) : NaN;
-  if (Number.isFinite(v)) return Math.min(Math.max(v, 0), 1);
-  return 0.5; // 일반보다 조금 더 완화
-})();
-
-const RANDOM_VECTOR_TOP_K = (() => {
-  const raw = process.env.RAG_RANDOM_TOP_K;
-  const v = raw !== undefined ? Number(raw) : NaN;
-  if (Number.isFinite(v)) return Math.max(1, Math.floor(v));
-  return 5; // 후보를 더 넓게
-})();
-
-const RANDOM_SAMPLING_TEMPERATURE = (() => {
-  const raw = process.env.RAG_RANDOM_TEMP;
-  const v = raw !== undefined ? Number(raw) : NaN;
-  if (Number.isFinite(v) && v > 0) return v;
-  return 0.7; // 다양성 ↑
-})();
+const RANDOM_VECTOR_THRESHOLD = 0.5; // 일반보다 더 완화
+const RANDOM_VECTOR_TOP_K = 5;       // 후보 더 넓게
+const RANDOM_SAMPLING_TEMPERATURE = 0.7; // 다양성↑
 
 function pickFromTopK(cands: CandidateRow[], temp: number): CandidateRow {
   if (!Array.isArray(cands) || cands.length === 0) throw new Error("empty candidates");
