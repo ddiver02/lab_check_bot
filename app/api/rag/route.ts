@@ -76,6 +76,14 @@ function cosineSim(a: number[], b: number[]): number {
   return dot / (Math.sqrt(na) * Math.sqrt(nb));
 }
 
+type EmbeddingRow = {
+  id: number;
+  quote: string;
+  author: string;
+  source: string;
+  embedding: unknown;
+};
+
 async function clientSideMatch(
   queryVec: number[],
   limit: number
@@ -87,20 +95,21 @@ async function clientSideMatch(
       .from('quote_embeddings')
       .select('id, quote, author, source, embedding');
     if (error || !data) return null;
-    const scored = (data as any[]).map((row) => {
+    const rows = data as EmbeddingRow[];
+    const scored: CandidateRow[] = rows.map((row) => {
       const emb: number[] = Array.isArray(row.embedding)
-        ? row.embedding
+        ? (row.embedding as number[])
         : typeof row.embedding === 'string'
-          ? JSON.parse(row.embedding)
+          ? (JSON.parse(row.embedding as string) as number[])
           : [];
       const sim = cosineSim(queryVec, emb);
       return {
-        id: row.id as number,
-        quote: row.quote as string,
-        author: row.author as string,
-        source: row.source as string,
+        id: row.id,
+        quote: row.quote,
+        author: row.author,
+        source: row.source,
         similarity: sim,
-      } as CandidateRow;
+      };
     });
     scored.sort((a, b) => b.similarity - a.similarity);
     return scored.slice(0, limit);
@@ -201,24 +210,7 @@ async function saveRecommendationReason(
   }
 }
 
-// 추천 직후, 반응 미선택 상태를 NULL로 기록 (있어도 실패 무시)
-async function saveFeedbackPlaceholder(
-  admin: ReturnType<typeof getSupabaseAdmin>,
-  params: { user_input_id?: number; quote_id: number }
-) {
-  try {
-    if (!params.user_input_id) return;
-    await admin.from('user_feedback').insert({
-      user_input_id: params.user_input_id,
-      quote_id: params.quote_id,
-      action: 'none',
-    });
-  } catch (e) {
-    if (process.env.DEV_LOG_DB === "1") {
-      console.error('DB insert (user_feedback placeholder) failed', e);
-    }
-  }
-}
+ 
 
 // ─────────────────────────────────────────────
 // 핸들러
