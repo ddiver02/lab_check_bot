@@ -61,6 +61,54 @@ function pickFromTopK(cands: CandidateRow[], temp: number): CandidateRow {
   return cands[cands.length - 1];
 }
 
+// Cosine similarity between two number arrays
+function cosineSim(a: number[], b: number[]): number {
+  let dot = 0, na = 0, nb = 0;
+  const n = Math.min(a.length, b.length);
+  for (let i = 0; i < n; i++) {
+    const x = a[i] || 0;
+    const y = b[i] || 0;
+    dot += x * y;
+    na += x * x;
+    nb += y * y;
+  }
+  if (na === 0 || nb === 0) return 0;
+  return dot / (Math.sqrt(na) * Math.sqrt(nb));
+}
+
+async function clientSideMatch(
+  queryVec: number[],
+  limit: number
+): Promise<CandidateRow[] | null> {
+  try {
+    const admin = getSupabaseAdmin();
+    // Fetch embeddings in chunks if needed; small dataset so single fetch
+    const { data, error } = await admin
+      .from('quote_embeddings')
+      .select('id, quote, author, source, embedding');
+    if (error || !data) return null;
+    const scored = (data as any[]).map((row) => {
+      const emb: number[] = Array.isArray(row.embedding)
+        ? row.embedding
+        : typeof row.embedding === 'string'
+          ? JSON.parse(row.embedding)
+          : [];
+      const sim = cosineSim(queryVec, emb);
+      return {
+        id: row.id as number,
+        quote: row.quote as string,
+        author: row.author as string,
+        source: row.source as string,
+        similarity: sim,
+      } as CandidateRow;
+    });
+    scored.sort((a, b) => b.similarity - a.similarity);
+    return scored.slice(0, limit);
+  } catch {
+    return null;
+  }
+}
+
 // 랜덤 1개 가져오기 (fallback/랜덤모드 공용)
 async function fetchRandomQuote(): Promise<MinimalQuoteWithId> {
   const admin = getSupabaseAdmin();
@@ -315,6 +363,60 @@ export async function POST(req: Request) {
           });
           // no placeholder write; only record if user taps like
           return NextResponse.json({ ...payload, debug }, { status: 200 });
+        } else {
+          // Client-side fallback match (no RPC or 0 results)
+          const local = await clientSideMatch(queryVec, RANDOM_VECTOR_TOP_K);
+          if (local && local.length > 0) {
+            debug.path = "random-client-match";
+            (debug.random as Record<string, unknown>).localMatchCount = local.length;
+            const picked = pickFromTopK(local, RANDOM_SAMPLING_TEMPERATURE);
+            (debug.random as Record<string, unknown>).pickedId = picked.id;
+            (debug.random as Record<string, unknown>).pickedSim = picked.similarity;
+
+            const { user_input_id } = await logInputAndInteraction(admin, {
+              user_input: query,
+              selected_mode: mode,
+              quote_id: picked.id,
+            });
+            let reason: string | undefined;
+            try {
+              const gen = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+              const prompt = [
+                "사용자 입력을 바탕으로 인사이트/영감을 줄 수 있는 연결을 한국어 한 문장으로만 설명하세요.",
+                "규칙:",
+                "- 문장 1개, 24~90자.",
+                "- 머릿글, 줄바꿈, 따옴표 금지.",
+                "- 담백하고 친근한 어조.",
+                "",
+                `사용자 입력: "${query}"`,
+                `인용문: "${picked.quote}" — ${picked.author}${picked.source ? `, 『${picked.source}』` : ""}`,
+              ].join("\n");
+              const out = await gen.generateContent(prompt);
+              const txt = out.response.text().trim();
+              const line = (txt.split(/\r?\n/)[0] || txt).trim()
+                .replace(/^[-*•\s]+/, "")
+                .replace(/^\"|\"$/g, "");
+              const clip = (s: string) => s.slice(0, 140);
+              reason = clip(line);
+            } catch {}
+
+            const payload: MinimalQuote = {
+              quote: picked.quote,
+              author: picked.author,
+              source: picked.source,
+              quote_id: picked.id,
+              user_input_id,
+              similarity: picked.similarity,
+              reason,
+            };
+            await saveRecommendationReason(admin, {
+              user_input_id,
+              quote_id: picked.id,
+              reason,
+              similarity: payload.similarity,
+            });
+            return NextResponse.json({ ...payload, debug }, { status: 200 });
+          }
         }
       } catch {
         // 아래 무작위 폴백으로 진행
@@ -444,6 +546,57 @@ export async function POST(req: Request) {
       });
       // no placeholder write; only record if user taps like
       return NextResponse.json({ ...minimal, debug }, { status: 200 });
+    } else {
+      // Client-side fallback match (no RPC or 0 results)
+      const local = await clientSideMatch(queryVec, VECTOR_TOP_K);
+      if (local && local.length > 0) {
+        debug.path = "vector-client-match";
+        debug.vector = { threshold: VECTOR_THRESHOLD, topK: VECTOR_TOP_K, temp: SAMPLING_TEMPERATURE, matchCount: local.length };
+        const top = pickFromTopK(local, SAMPLING_TEMPERATURE);
+        const { user_input_id } = await logInputAndInteraction(admin, {
+          user_input: query,
+          selected_mode: mode,
+          quote_id: top.id,
+        });
+        let reason: string | undefined;
+        try {
+          const gen = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+          const prompt = [
+            "다음 정보를 바탕으로 추천 이유를 한국어 한 문장으로만 작성하세요.",
+            "규칙:",
+            "- 문장 1개, 24~90자.",
+            "- 머릿글(의도:, 해석 포인트:), 줄바꿈, 따옴표 금지.",
+            "- 사용자의 의도 요약과 인용문의 해석 포인트를 자연스럽게 한 문장에 녹이기.",
+            "- 과장/추가 사실 금지, 입력과 인용문에서만 추론.",
+            "",
+            `사용자 입력: "${query}"`,
+            `인용문: "${top.quote}" — ${top.author}${top.source ? `, 『${top.source}』` : ""}`,
+          ].join("\n");
+          const out = await gen.generateContent(prompt);
+          const txt = out.response.text().trim();
+          const line = (txt.split(/\r?\n/)[0] || txt).trim()
+            .replace(/^[-*•\s]+/, "")
+            .replace(/^\"|\"$/g, "");
+          const clip = (s: string) => s.slice(0, 140);
+          reason = clip(line);
+        } catch {}
+        const minimal: MinimalQuote = {
+          quote: top.quote,
+          author: top.author,
+          source: top.source,
+          quote_id: top.id,
+          user_input_id,
+          similarity: top.similarity,
+          reason,
+        };
+        await saveRecommendationReason(admin, {
+          user_input_id,
+          quote_id: top.id,
+          reason,
+          similarity: minimal.similarity,
+        });
+        return NextResponse.json({ ...minimal, debug }, { status: 200 });
+      }
     }
   } catch {
     // 임베딩/벡터 검색 실패 → 아래 랜덤 폴백
