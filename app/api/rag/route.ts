@@ -34,8 +34,8 @@ type MinimalQuoteWithId = MinimalQuote & { id: number };
 // Note: caching disabled — always compute fresh results
 
 // 매칭 파라미터 (하드코딩)
-const VECTOR_THRESHOLD = 0.55; // 유사도 임계값(낮을수록 후보↑)
-const VECTOR_TOP_K = 5;        // 상위 후보 개수
+const VECTOR_THRESHOLD = 0.30; // 유사도 임계값(낮을수록 후보↑)
+const VECTOR_TOP_K = 10;        // 상위 후보 개수
 // 결과 다양성 제어용 샘플링 온도 (낮을수록 1위에 집중, 높을수록 다양성↑)
 const SAMPLING_TEMPERATURE = 0.35;
 
