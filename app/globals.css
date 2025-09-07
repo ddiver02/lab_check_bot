@@ -45,7 +45,8 @@
     @apply rounded-2xl border bg-white/90 p-6 shadow-sm;
   }
   blockquote.quote-text {
-    @apply text-[1.125rem] leading-8 font-serif;
+    /* 1pt 정도 축소 (18px → 17px 근사) */
+    @apply text-[1.0625rem] leading-8 font-serif;
   }
   .quote-meta {
     @apply mt-3 text-sm text-gray-600 font-sans;
