@@ -176,6 +176,7 @@ async function saveFeedbackPlaceholder(
 // 핸들러
 // ─────────────────────────────────────────────
 export async function POST(req: Request) {
+  const debug: Record<string, unknown> = {};
   // 0) 요청 파싱
   let bodyUnknown: unknown;
   try {
@@ -186,6 +187,7 @@ export async function POST(req: Request) {
 
   const raw = (bodyUnknown ?? {}) as RagRequest;
   const mode: Mode = raw.mode ?? "comfort";
+  debug.mode = mode;
 
   // random 모드는 빈 문자열 허용 → 기본 프롬프트로 치환 (표시/로그용)
   const hadQuery = !!(raw.query && String(raw.query).trim());
@@ -235,27 +237,37 @@ export async function POST(req: Request) {
         const queryVec = emb.embedding.values;
 
         let matches: CandidateRow[] | null = null;
+        debug.random = { threshold: RANDOM_VECTOR_THRESHOLD, topK: RANDOM_VECTOR_TOP_K, temp: RANDOM_SAMPLING_TEMPERATURE };
+        const rpcTried: string[] = [];
         const m1 = await admin.rpc("match_quotes", {
           query_embedding: queryVec,
           match_threshold: RANDOM_VECTOR_THRESHOLD,
           match_count: RANDOM_VECTOR_TOP_K,
         });
+        rpcTried.push("match_quotes");
         if (!m1.error && Array.isArray(m1.data)) {
           matches = m1.data as CandidateRow[];
         } else {
+          if (m1.error) (debug.random as Record<string, unknown>).rpcError1 = String(m1.error.message || m1.error);
           const m2 = await admin.rpc("match_quote_embeddings", {
             query_embedding: queryVec,
             match_threshold: RANDOM_VECTOR_THRESHOLD,
             match_count: RANDOM_VECTOR_TOP_K,
           });
+          rpcTried.push("match_quote_embeddings");
           if (!m2.error && Array.isArray(m2.data)) {
             matches = m2.data as CandidateRow[];
           }
         }
+        (debug.random as Record<string, unknown>).rpcTried = rpcTried;
 
         if (matches && matches.length > 0) {
+          debug.path = "random-input-match";
+          (debug.random as Record<string, unknown>).matchCount = matches.length;
           const topK = matches.slice(0, RANDOM_VECTOR_TOP_K);
           const picked = pickFromTopK(topK, RANDOM_SAMPLING_TEMPERATURE);
+          (debug.random as Record<string, unknown>).pickedId = picked.id;
+          (debug.random as Record<string, unknown>).pickedSim = picked.similarity;
 
           const { user_input_id } = await logInputAndInteraction(admin, {
             user_input: query,
@@ -302,10 +314,11 @@ export async function POST(req: Request) {
             similarity: payload.similarity,
           });
           // no placeholder write; only record if user taps like
-          return NextResponse.json(payload, { status: 200 });
+          return NextResponse.json({ ...payload, debug }, { status: 200 });
         }
       } catch {
         // 아래 무작위 폴백으로 진행
+        debug.path = "random-fallback-embed-error";
       }
     }
 
@@ -329,6 +342,7 @@ export async function POST(req: Request) {
           ? "직접 매칭이 어려워 가벼운 영감으로 제안드려요."
           : "영감을 위한 무작위 추천으로, 열린 마음으로 읽어보세요.",
       };
+      debug.path = hadQuery ? (debug.path || "random-fallback-nomatch") : "random-noinput";
       // 이유 로그 저장
       await saveRecommendationReason(admin, {
         user_input_id,
@@ -336,7 +350,7 @@ export async function POST(req: Request) {
         reason: response.reason,
       });
       // no placeholder write; only record if user taps like
-      return NextResponse.json(response, { status: 200 });
+      return NextResponse.json({ ...response, debug }, { status: 200 });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       return NextResponse.json({ error: msg }, { status: 500 });
@@ -376,6 +390,8 @@ export async function POST(req: Request) {
     }
 
     if (matches && matches.length > 0) {
+      debug.path = "vector-match";
+      debug.vector = { threshold: VECTOR_THRESHOLD, topK: VECTOR_TOP_K, temp: SAMPLING_TEMPERATURE, matchCount: matches.length };
       // 상위 K 후보 중 softmax 가중 샘플링으로 1개 선택
       const topK = matches.slice(0, VECTOR_TOP_K);
       const top = pickFromTopK(topK, SAMPLING_TEMPERATURE);
@@ -427,10 +443,11 @@ export async function POST(req: Request) {
         similarity: minimal.similarity,
       });
       // no placeholder write; only record if user taps like
-      return NextResponse.json(minimal, { status: 200 });
+      return NextResponse.json({ ...minimal, debug }, { status: 200 });
     }
   } catch {
     // 임베딩/벡터 검색 실패 → 아래 랜덤 폴백
+    debug.path = "vector-fallback-embed-error";
   }
 
   // 5) 최종 폴백: DB 랜덤 1개 (Genkit 호출 제거 → timeout 방지)
@@ -455,7 +472,8 @@ export async function POST(req: Request) {
       reason: response.reason,
     });
     // no placeholder write; only record if user taps like
-    return NextResponse.json(response, { status: 200 });
+    debug.path = "vector-fallback-nomatch";
+    return NextResponse.json({ ...response, debug }, { status: 200 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ error: msg }, { status: 500 });
